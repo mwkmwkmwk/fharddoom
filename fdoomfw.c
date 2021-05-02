@@ -90,10 +90,6 @@ static void spancmd_src_slot(uint32_t val) {
 	SPANCMD[FHARDDOOM_SPANCMD_TYPE_SRC_SLOT] = val;
 }
 
-static void spancmd_src_ptr(uint32_t val) {
-	SPANCMD[FHARDDOOM_SPANCMD_TYPE_SRC_PTR] = val;
-}
-
 static void spancmd_src_pitch(uint32_t val) {
 	SPANCMD[FHARDDOOM_SPANCMD_TYPE_SRC_PITCH] = val;
 }
@@ -127,12 +123,12 @@ static void spansem(void) {
 	SPANCMD[FHARDDOOM_SPANCMD_TYPE_SPANSEM] = 0;
 }
 
-static void colcmd_col_cmap_b_ptr(uint32_t val) {
-	COLCMD[FHARDDOOM_COLCMD_TYPE_COL_CMAP_B_PTR] = val;
+static void colcmd_col_cmap_b_va(uint32_t val) {
+	COLCMD[FHARDDOOM_COLCMD_TYPE_COL_CMAP_B_VA] = val;
 }
 
-static void colcmd_col_src_ptr(uint32_t val) {
-	COLCMD[FHARDDOOM_COLCMD_TYPE_COL_SRC_PTR] = val;
+static void colcmd_col_src_va(uint32_t val) {
+	COLCMD[FHARDDOOM_COLCMD_TYPE_COL_SRC_VA] = val;
 }
 
 static void colcmd_col_src_pitch(uint32_t val) {
@@ -216,8 +212,8 @@ static void fxcmd_draw_fuzz(uint32_t num) {
 	FXCMD[FHARDDOOM_FXCMD_TYPE_DRAW] = FHARDDOOM_FXCMD_DATA_DRAW(num, false, false, true, true, false);
 }
 
-static void swrcmd_transmap_ptr(uint32_t val) {
-	SWRCMD[FHARDDOOM_SWRCMD_TYPE_TRANSMAP_PTR] = val;
+static void swrcmd_transmap_va(uint32_t val) {
+	SWRCMD[FHARDDOOM_SWRCMD_TYPE_TRANSMAP_VA] = val;
 }
 
 static void swrcmd_dst_slot(uint32_t val) {
@@ -275,10 +271,6 @@ static uint32_t validate_slot_dst(uint32_t idx) {
 	if (!(slot_data[idx] & FHARDDOOM_USER_BIND_SLOT_DATA_WRITABLE))
 		error(FHARDDOOM_CMD_ERROR_CODE_RO_SLOT, idx);
 	return idx;
-}
-
-static uint32_t make_fat_ptr(uint32_t ptr, uint32_t slot) {
-	return (ptr & 0x3fffff) | slot << 24;
 }
 
 static void cmd_fill_rect(uint32_t cmd_header) {
@@ -478,7 +470,6 @@ static void cmd_blit(uint32_t cmd_header) {
 		/* Complex case, use SPAN.  */
 		STAT_BUMP[FHARDDOOM_STAT_FW_BLIT_COMPLEX] = 1;
 		spancmd_src_slot(slot_src);
-		spancmd_src_ptr(0);
 		spancmd_src_pitch(src_pitch);
 		spancmd_uvmask(ulog, vlog);
 		uint32_t ustep = (src_w << 16) / dst_w;
@@ -596,13 +587,13 @@ static void wipe_flush(uint32_t dst_ptr, uint32_t dst_pitch, uint32_t src_a_ptr,
 		ylast = opy;
 		switch (op) {
 			case WIPE_OP_START_A:
-				colcmd_col_src_ptr(make_fat_ptr(src_a_ptr + opx, slot_src_a));
+				colcmd_col_src_va(FHARDDOOM_VA(src_a_ptr + opx, slot_src_a));
 				colcmd_col_src_pitch(src_a_pitch);
 				colcmd_col_enable(opx, false, 0);
 				active++;
 				break;
 			case WIPE_OP_START_B:
-				colcmd_col_src_ptr(make_fat_ptr(src_b_ptr + opx, slot_src_b));
+				colcmd_col_src_va(FHARDDOOM_VA(src_b_ptr + opx, slot_src_b));
 				colcmd_col_src_pitch(src_b_pitch);
 				colcmd_col_enable(opx, false, 0);
 				active++;
@@ -671,10 +662,10 @@ static void cmd_wipe(uint32_t cmd_header) {
 
 static uint32_t dc_mem_idx = 0;
 static uint32_t dc_mem_wr0[DC_MEM_SIZE];
-static uint32_t dc_mem_tex_ptr[DC_MEM_SIZE];
+static uint32_t dc_mem_tex_va[DC_MEM_SIZE];
 static uint32_t dc_mem_ustart[DC_MEM_SIZE];
 static uint32_t dc_mem_ustep[DC_MEM_SIZE];
-static uint32_t dc_mem_cmap_b_ptr[DC_MEM_SIZE];
+static uint32_t dc_mem_cmap_b_va[DC_MEM_SIZE];
 
 enum {
 	/* Stop operations must be processed before start operations for given Y.  */
@@ -707,10 +698,10 @@ static void draw_columns_flush(uint32_t dst_pitch, bool cmap_a_en, bool cmap_b_e
 		uint32_t x = FHARDDOOM_USER_DRAW_COLUMNS_WR0_EXTR_X(dc_mem_wr0[opi]) & FHARDDOOM_BLOCK_MASK;
 		if (op == DC_OP_START) {
 			uint32_t height = FHARDDOOM_USER_DRAW_COLUMNS_WR0_EXTR_SRC_HEIGHT(dc_mem_wr0[opi]);
-			colcmd_col_src_ptr(dc_mem_tex_ptr[opi]);
+			colcmd_col_src_va(dc_mem_tex_va[opi]);
 			colcmd_col_ustart(dc_mem_ustart[opi]);
 			colcmd_col_ustep(dc_mem_ustep[opi]);
-			colcmd_col_cmap_b_ptr(dc_mem_cmap_b_ptr[opi]);
+			colcmd_col_cmap_b_va(dc_mem_cmap_b_va[opi]);
 			colcmd_col_enable(x, cmap_b_en, height);
 			active++;
 		} else {
@@ -747,7 +738,7 @@ static void cmd_draw_columns(uint32_t cmd_header) {
 		if (trans_en) {
 			uint32_t slot_transmap = validate_slot(FHARDDOOM_USER_DRAW_COLUMNS_W1_EXTR_SLOT_TRANSMAP(w1));
 			uint32_t transmap_idx = FHARDDOOM_USER_DRAW_COLUMNS_W1_EXTR_TRANSMAP_IDX(w1);
-			swrcmd_transmap_ptr(make_fat_ptr(transmap_idx << 16, slot_transmap));
+			swrcmd_transmap_va(FHARDDOOM_VA(transmap_idx << 16, slot_transmap));
 		}
 	}
 	uint32_t xlast = 0;
@@ -775,14 +766,14 @@ static void cmd_draw_columns(uint32_t cmd_header) {
 		uint32_t wr2 = *CMD_FETCH_ARG;
 		uint32_t slot_tex = validate_slot(FHARDDOOM_USER_DRAW_COLUMNS_WR2_EXTR_SLOT_TEX(wr2));
 		uint32_t tex_ptr = FHARDDOOM_USER_DRAW_COLUMNS_WR2_EXTR_TEX_PTR(wr2);
-		dc_mem_tex_ptr[idx] = make_fat_ptr(tex_ptr, slot_tex);
+		dc_mem_tex_va[idx] = FHARDDOOM_VA(tex_ptr, slot_tex);
 		dc_mem_ustart[idx] = *CMD_FETCH_ARG;
 		dc_mem_ustep[idx] = *CMD_FETCH_ARG;
 		if (cmap_b_en) {
 			uint32_t wr5 = *CMD_FETCH_ARG;
 			uint32_t slot_cmap_b = validate_slot(FHARDDOOM_USER_DRAW_COLUMNS_WR5_EXTR_SLOT_CMAP_B(wr5));
 			uint32_t cmap_b_idx = FHARDDOOM_USER_DRAW_COLUMNS_WR5_EXTR_CMAP_B_IDX(wr5);
-			dc_mem_cmap_b_ptr[idx] = make_fat_ptr(cmap_b_idx << 8, slot_cmap_b);
+			dc_mem_cmap_b_va[idx] = FHARDDOOM_VA(cmap_b_idx << 8, slot_cmap_b);
 		}
 
 		heap_put(DC_OP(DC_OP_START, idx, y0));
@@ -934,7 +925,7 @@ static void cmd_draw_spans(uint32_t cmd_header) {
 		if (trans_en) {
 			uint32_t slot_transmap = validate_slot(FHARDDOOM_USER_DRAW_SPANS_W1_EXTR_SLOT_TRANSMAP(w1));
 			uint32_t transmap_idx = FHARDDOOM_USER_DRAW_SPANS_W1_EXTR_TRANSMAP_IDX(w1);
-			swrcmd_transmap_ptr(make_fat_ptr(transmap_idx << 16, slot_transmap));
+			swrcmd_transmap_va(FHARDDOOM_VA(transmap_idx << 16, slot_transmap));
 		}
 	}
 	uint32_t w2 = *CMD_FETCH_ARG;
@@ -952,7 +943,7 @@ static void cmd_draw_spans(uint32_t cmd_header) {
 	if (cmap_b_en)
 		srdcmd_src_pitch(FHARDDOOM_BLOCK_SIZE);
 	/* 1 is unaligned and thus invalid.  */
-	uint32_t last_cmap_ptr = 1;
+	uint32_t last_cmap_va = 1;
 	while (num--) {
 		STAT_BUMP[FHARDDOOM_STAT_FW_DRAW_SPANS_SPAN] = 1;
 		uint32_t wr0 = *CMD_FETCH_ARG;
@@ -968,12 +959,13 @@ static void cmd_draw_spans(uint32_t cmd_header) {
 			uint32_t wr5 = *CMD_FETCH_ARG;
 			uint32_t slot_cmap_b = validate_slot(FHARDDOOM_USER_DRAW_SPANS_WR5_EXTR_SLOT_CMAP_B(wr5));
 			uint32_t cmap_b_idx = FHARDDOOM_USER_DRAW_SPANS_WR5_EXTR_CMAP_B_IDX(wr5);
-			uint32_t cmap_ptr = make_fat_ptr(cmap_b_idx << 8, slot_cmap_b);
-			if (cmap_ptr != last_cmap_ptr) {
-				srdcmd_src_ptr(cmap_ptr);
+			uint32_t cmap_va = FHARDDOOM_VA(cmap_b_idx << 8, slot_cmap_b);
+			if (cmap_va != last_cmap_va) {
+				srdcmd_src_slot(slot_cmap_b);
+				srdcmd_src_ptr(cmap_b_idx << 8);
 				srdcmd_read_fx(4);
 				fxcmd_load_cmap_b();
-				last_cmap_ptr = cmap_ptr;
+				last_cmap_va = cmap_va;
 			}
 		}
 		uint32_t off = x0 & ~FHARDDOOM_BLOCK_MASK;

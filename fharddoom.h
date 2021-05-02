@@ -139,17 +139,17 @@
 
 /* The manual feed: user-facing registers.
  *
- * The CMD_MAIN_FREE register is read-only, and returns the current amount
+ * The CMD_MANUAL_FREE register is read-only, and returns the current amount
  * of free space in the internal command FIFO available for writing via
- * CMD_MAIN_FEED register, in words.  The values possible are 0-255.
+ * CMD_MANUAL_FEED register, in words.  The values possible are 0-255.
  * Immediately after reset, or when otherwise idle, this register is at
  * the max value (255).  It decrements by one every time a command word is
- * sent via the CMD_MAIN_FEED, and it increments by one every time such
+ * sent via the CMD_MANUAL_FEED, and it increments by one every time such
  * a command word is consumed for execution by FE.  This register reads
  * as 0 whenever the automatic fetcher is enabled, or when the internal
  * FIFO still contains commands fetched by automatic fetcher.
  *
- * The CMD_MAIN_FEED register is write only and is used to manually feed
+ * The CMD_MANUAL_FEED register is write only and is used to manually feed
  * command words for execution, bypassing the fetcher described above.
  * Every time it is written, the word written is stored into the internal
  * command FIFO as if it was just fetched from the main command buffer.
@@ -157,13 +157,13 @@
  * Writing this register is disallowed (and will trigger the FEED_ERROR
  * interrupt) in the following cases:
  *
- * - CMD_MAIN_FREE is 0 (no space in the FIFO)
+ * - CMD_MANUAL_FREE is 0 (no space in the FIFO)
  * - CMD_MAIN_SETUP.ENABLE is 1 (manual feed cannot be used while the fetcher
  *   is active)
  */
 
-#define FHARDDOOM_CMD_MAIN_FREE				0x008c
-#define FHARDDOOM_CMD_MAIN_FEED				0x008c
+#define FHARDDOOM_CMD_MANUAL_FREE			0x008c
+#define FHARDDOOM_CMD_MANUAL_FEED			0x008c
 
 /* The fences: user-facing registers.
  *
@@ -227,7 +227,7 @@
 #define FHARDDOOM_CMD_INFO_SLOT_SHIFT			24
 /* Set if the command came from the subroutine buffer.  */
 #define FHARDDOOM_CMD_INFO_SUB				0x40000000
-/* Set if the command came via CMD_MAIN_FEED register.
+/* Set if the command came via CMD_MANUAL_FEED register.
  * If set, PTR and SLOT are meaningless.  */
 #define FHARDDOOM_CMD_INFO_MANUAL			0x80000000
 #define FHARDDOOM_CMD_INFO_MASK				0xff3ffffc
@@ -247,23 +247,24 @@
 #define FHARDDOOM_CMD_SUB_STATE_PTR_MASK		0x003ffffc
 #define FHARDDOOM_CMD_SUB_STATE_SLOT_MASK		0x3f000000
 #define FHARDDOOM_CMD_SUB_STATE_SLOT_SHIFT		24
+#define FHARDDOOM_CMD_SUB_STATE_MASK			0x3f3ffffc
 
 #define FHARDDOOM_CMD_SUB_FIFO_GET			0x00b4
 #define FHARDDOOM_CMD_SUB_FIFO_PUT			0x00b8
 #define FHARDDOOM_CMD_SUB_FIFO_WINDOW			0x00bc
-#define FHARDDOOM_CMD_SUB_FIFO_SIZE			0x00000080
+#define FHARDDOOM_CMD_SUB_FIFO_SIZE			0x00000100
 
 #define FHARDDOOM_CMD_MAIN_STATE			0x00c0
 /* Address of the next command word to be delivered to FE.  */
 #define FHARDDOOM_CMD_MAIN_STATE_PTR_MASK		0x003ffffc
-/* If set, any words currently in FIFO are from CMD_FEED.  */
+/* If set, any words currently in FIFO are from CMD_MANUAL_FEED.  */
 #define FHARDDOOM_CMD_MAIN_STATE_MANUAL			0x80000000
 #define FHARDDOOM_CMD_MAIN_STATE_MASK			0x803ffffc
 
 #define FHARDDOOM_CMD_MAIN_FIFO_GET			0x00c4
 #define FHARDDOOM_CMD_MAIN_FIFO_PUT			0x00c8
 #define FHARDDOOM_CMD_MAIN_FIFO_WINDOW			0x00cc
-#define FHARDDOOM_CMD_MAIN_FIFO_SIZE			0x00000080
+#define FHARDDOOM_CMD_MAIN_FIFO_SIZE			0x00000100
 
 /* Section 2.3: FE — the front end.  Runs firmware that reads the user
  * commands, and converts them to the proper low-level commands understood by
@@ -403,8 +404,8 @@
 /* The master PT pointers, aka the slots.  */
 #define FHARDDOOM_MMU_SLOT(i)				(0x400 + (i) * 8)
 #define FHARDDOOM_MMU_SLOT_VALID			0x00000001
-#define FHARDDOOM_MMU_SLOT_PTR_MASK			0xfffffff0
-#define FHARDDOOM_MMU_SLOT_PTR_SHIFT			8
+#define FHARDDOOM_MMU_SLOT_PA_MASK			0xfffffff0
+#define FHARDDOOM_MMU_SLOT_PA_SHIFT			8
 #define FHARDDOOM_MMU_SLOT_MASK				0xfffffff1
 #define FHARDDOOM_MMU_SLOT_NUM				64
 /* The per-client singular TLBs.  */
@@ -415,7 +416,6 @@
 #define FHARDDOOM_MMU_CLIENT_VA_ADDR_MASK		0x003fffff
 #define FHARDDOOM_MMU_CLIENT_VA_SLOT_MASK		0x3f000000
 #define FHARDDOOM_MMU_CLIENT_VA_SLOT_SHIFT		24
-#define FHARDDOOM_MMU_CLIENT_VA_MASK			0x3f3fffff
 /* The PTE cache pool.  */
 #define FHARDDOOM_MMU_TLB_TAG(i)			(0x0600 + (i) * 8)
 #define FHARDDOOM_MMU_TLB_VALUE(i)			(0x0604 + (i) * 8)
@@ -515,8 +515,8 @@
 #define FHARDDOOM_STAT_CACHE_SPEC_MISS(i)		(0x4c + (i))
 /* A cache flush (per-client).  */
 #define FHARDDOOM_STAT_CACHE_FLUSH(i)			(0x50 + (i))
-/* BATCH_WAIT interrupt triggered.  */
-#define FHARDDOOM_STAT_BATCH_WAIT			0x54
+/* FENCE_WAIT interrupt triggered.  */
+#define FHARDDOOM_STAT_FENCE_WAIT			0x54
 /* 0x55 unused.  */
 /* CMD block read.  */
 #define FHARDDOOM_STAT_CMD_BLOCK			0x56
@@ -576,11 +576,12 @@
 #define FHARDDOOM_STAT_FX_DRAW				0x73
 /* FX block drawn.  */
 #define FHARDDOOM_STAT_FX_BLOCK				0x74
-/* FX block drawn with CMAP enabled.  */
-#define FHARDDOOM_STAT_FX_BLOCK_CMAP			0x75
+/* FX block drawn with CMAP_A enabled.  */
+#define FHARDDOOM_STAT_FX_BLOCK_CMAP_A			0x75
+/* FX block drawn with CMAP_B enabled.  */
+#define FHARDDOOM_STAT_FX_BLOCK_CMAP_B			0x76
 /* FX block drawn with FUZZ enabled.  */
-#define FHARDDOOM_STAT_FX_BLOCK_FUZZ			0x76
-/* 0x77 unused.  */
+#define FHARDDOOM_STAT_FX_BLOCK_FUZZ			0x77
 /* SWR command executed.  */
 #define FHARDDOOM_STAT_SWR_CMD				0x78
 /* SWR DRAW command executed.  */
@@ -614,11 +615,10 @@
 #define FHARDDOOM_SWR_STATE_COLSEM			0x20000000
 #define FHARDDOOM_SWR_STATE_SPANSEM			0x40000000
 #define FHARDDOOM_SWR_STATE_MASK			0x77fff7ff
-#define FHARDDOOM_SWR_TRANSMAP_PTR			0x0a04
-#define FHARDDOOM_SWR_DST_PTR				0x0a08
-#define FHARDDOOM_SWR_DST_PTR_MASK			0x3f3fffc0
+#define FHARDDOOM_SWR_TRANSMAP_VA			0x0a04
+#define FHARDDOOM_SWR_TRANSMAP_VA_MASK			0x3f3f0000
+#define FHARDDOOM_SWR_DST_VA				0x0a08
 #define FHARDDOOM_SWR_DST_PITCH				0x0a0c
-#define FHARDDOOM_SWR_DST_PITCH_MASK			0x003fffc0
 /* 64-bit */
 #define FHARDDOOM_SWR_BLOCK_MASK			0x0a10
 /* The three buffers: source data, orignal destination data, post-TRANSMAP
@@ -638,10 +638,8 @@
 #define FHARDDOOM_SRD_STATE_SRDSEM			0x10000000
 #define FHARDDOOM_SRD_STATE_FESEM			0x20000000
 #define FHARDDOOM_SRD_STATE_MASK			0x3001ffff
-#define FHARDDOOM_SRD_SRC_PTR				0x0b04
-#define FHARDDOOM_SRD_SRC_PTR_MASK			0x3f3fffc0
+#define FHARDDOOM_SRD_SRC_VA				0x0b04
 #define FHARDDOOM_SRD_SRC_PITCH				0x0b08
-#define FHARDDOOM_SRD_SRC_PITCH_MASK			0x003fffc0
 
 /* Section 2.9: SPAN — the span reader.  Used to read texture data for
  * the DRAW_SPAN function, and to read source data for the BLIT
@@ -672,12 +670,13 @@
 /* If 1, waiting on SPANSEM.  */
 #define FHARDDOOM_SPAN_STATE_SPANSEM			0x10000000
 #define FHARDDOOM_SPAN_STATE_MASK			0x103fffff
-#define FHARDDOOM_SPAN_SRC_PTR				0x0b44
-#define FHARDDOOM_SPAN_SRC_PTR_MASK			0x3f3fffc0
-#define FHARDDOOM_SPAN_SRC_PITCH			0x0b48
+#define FHARDDOOM_SPAN_SRC				0x0b44
 #define FHARDDOOM_SPAN_SRC_PITCH_MASK			0x003fffc0
+#define FHARDDOOM_SPAN_SRC_SLOT_MASK			0x3f000000
+#define FHARDDOOM_SPAN_SRC_SLOT_SHIFT			24
+#define FHARDDOOM_SPAN_SRC_MASK				0x3f3fffc0
 /* The mask of the source uv coords.  */
-#define FHARDDOOM_SPAN_UVMASK				0x0b4c
+#define FHARDDOOM_SPAN_UVMASK				0x0b48
 #define FHARDDOOM_SPAN_UVMASK_MASK			0x00001f1f
 #define FHARDDOOM_SPAN_USTART				0x0b50
 #define FHARDDOOM_SPAN_VSTART				0x0b54
@@ -745,16 +744,15 @@
 #define FHARDDOOM_COL_STATE_CMAP_A_POS_SHIFT		30
 #define FHARDDOOM_COL_STATE_MASK			0xf3f1ffff
 /* Per-column command state, to be moved to proper column RAM by COL_SETUP.  */
-#define FHARDDOOM_COL_STAGE_CMAP_B_PTR			0x2004
-#define FHARDDOOM_COL_STAGE_SRC_PTR			0x2008
+#define FHARDDOOM_COL_STAGE_CMAP_B_VA			0x2004
+#define FHARDDOOM_COL_STAGE_SRC_VA			0x2008
 #define FHARDDOOM_COL_STAGE_SRC_PITCH			0x200c
 #define FHARDDOOM_COL_STAGE_USTART			0x2010
 #define FHARDDOOM_COL_STAGE_USTEP			0x2014
 /* Actual per-column state.  */
-#define FHARDDOOM_COL_COLS_CMAP_B_PTR(i)		(0x2100 + (i) * 4)
-#define FHARDDOOM_COL_COLS_CMAP_B_PTR_MASK		0x3f3fff00
-#define FHARDDOOM_COL_COLS_SRC_PTR(i)			(0x2200 + (i) * 4)
-#define FHARDDOOM_COL_COLS_SRC_PTR_MASK			0x3f3fffff
+#define FHARDDOOM_COL_COLS_CMAP_B_VA(i)			(0x2100 + (i) * 4)
+#define FHARDDOOM_COL_COLS_CMAP_B_VA_MASK		0x3f3fff00
+#define FHARDDOOM_COL_COLS_SRC_VA(i)			(0x2200 + (i) * 4)
 #define FHARDDOOM_COL_COLS_SRC_PITCH(i)			(0x2300 + (i) * 4)
 #define FHARDDOOM_COL_COLS_SRC_PITCH_MASK		0x003fffff
 #define FHARDDOOM_COL_COLS_USTART(i)			(0x2400 + (i) * 4)
@@ -788,9 +786,9 @@
 #define FHARDDOOM_CACHE_TAG(i)				(0x8000 + (i) * 4)
 #define FHARDDOOM_CACHE_DATA(i)				(0xc000 + (i))
 #define FHARDDOOM_CACHE_SIZE				64
-#define FHARDDOOM_CACHE_TAG_VA_MASK			0xffffffc0
+#define FHARDDOOM_CACHE_TAG_VA_MASK			0x3f3fffc0
 #define FHARDDOOM_CACHE_TAG_VALID			0x00000001
-#define FHARDDOOM_CACHE_TAG_MASK			0xffffffc1
+#define FHARDDOOM_CACHE_TAG_MASK			0x3f3fffc1
 
 /* Section 2.13: end.  */
 
@@ -811,6 +809,10 @@
 #define FHARDDOOM_VA_ADDR(va)				((va) & 0x3fffff)
 #define FHARDDOOM_VA_PTI(va)				((va) >> 12 & 0x3ff)
 #define FHARDDOOM_VA_OFF(va)				((va) & 0xfff)
+/* Makes a VA.  */
+#define FHARDDOOM_VA(ptr, slot)				(((ptr) & 0x3fffff) | (slot) << 24)
+#define FHARDDOOM_VA_MASK				0x3f3fffff
+#define FHARDDOOM_SLOT_MASK				0x0000003f
 
 
 /* Section 4: The driver commands.  */
@@ -1027,6 +1029,7 @@
 #define FHARDDOOM_BLOCK_MASK				0x3f
 #define FHARDDOOM_BLOCK_SHIFT				6
 #define FHARDDOOM_BLOCK_PTR_MASK			0x003fffc0
+#define FHARDDOOM_BLOCK_VA_MASK				0x3f3fffc0
 #define FHARDDOOM_BLOCK_PITCH_MASK			0x003fffc0
 #define FHARDDOOM_COORD_MASK				0xffff
 #define FHARDDOOM_COLORMAP_SIZE				0x100
@@ -1044,7 +1047,9 @@
 /* Pokes the FENCE logic with a given payload.  */
 #define FHARDDOOM_FEMEM_CMD_FENCE			0x0000002c
 /* Write these three in order to perform a call; when done, next command words
- * will be fetched from the subroutine buffer, until it runs out.  */
+ * will be fetched from the subroutine buffer, until it runs out.
+ * LEN needs to be written last in the sequence, as it will immediately
+ * trigger fetching the subroutine.  */
 #define FHARDDOOM_FEMEM_CMD_CALL_SLOT			0x00000030
 #define FHARDDOOM_FEMEM_CMD_CALL_ADDR			0x00000034
 #define FHARDDOOM_FEMEM_CMD_CALL_LEN			0x00000038
@@ -1100,21 +1105,19 @@
 #define FHARDDOOM_SPANCMD_TYPE_NOP			0x0
 /* The slot of the source.  */
 #define FHARDDOOM_SPANCMD_TYPE_SRC_SLOT			0x1
-/* The virtual base address of the source.  */
-#define FHARDDOOM_SPANCMD_TYPE_SRC_PTR			0x2
 /* The pitch of the source.  */
-#define FHARDDOOM_SPANCMD_TYPE_SRC_PITCH		0x3
+#define FHARDDOOM_SPANCMD_TYPE_SRC_PITCH		0x2
 /* The mask of the source uv coords.  */
-#define FHARDDOOM_SPANCMD_TYPE_UVMASK			0x4
+#define FHARDDOOM_SPANCMD_TYPE_UVMASK			0x3
 /* Straight from the command words.  */
-#define FHARDDOOM_SPANCMD_TYPE_USTART			0x5
-#define FHARDDOOM_SPANCMD_TYPE_VSTART			0x6
-#define FHARDDOOM_SPANCMD_TYPE_USTEP			0x7
-#define FHARDDOOM_SPANCMD_TYPE_VSTEP			0x8
+#define FHARDDOOM_SPANCMD_TYPE_USTART			0x4
+#define FHARDDOOM_SPANCMD_TYPE_VSTART			0x5
+#define FHARDDOOM_SPANCMD_TYPE_USTEP			0x6
+#define FHARDDOOM_SPANCMD_TYPE_VSTEP			0x7
 /* Emits a given number of texels to the FX.  */
-#define FHARDDOOM_SPANCMD_TYPE_DRAW			0x9
+#define FHARDDOOM_SPANCMD_TYPE_DRAW			0x8
 /* Waits for a signal from SWR on the SPANSEM interface, then flushes cache.  */
-#define FHARDDOOM_SPANCMD_TYPE_SPANSEM			0xa
+#define FHARDDOOM_SPANCMD_TYPE_SPANSEM			0x9
 
 #define FHARDDOOM_SPANCMD_DATA_UVMASK(ulog, vlog)	((ulog) | (vlog) << 8)
 #define FHARDDOOM_SPANCMD_DATA_EXTR_UVMASK_ULOG(cmd)	((cmd) & 0x3f)
@@ -1129,9 +1132,9 @@
 
 #define FHARDDOOM_COLCMD_TYPE_NOP			0x0
 /* Per-column colormap B virtual address (incl. slot at bits 24-29).  */
-#define FHARDDOOM_COLCMD_TYPE_COL_CMAP_B_PTR		0x1
+#define FHARDDOOM_COLCMD_TYPE_COL_CMAP_B_VA		0x1
 /* Per-column source virtual address (incl. slot at bits 24-29).  */
-#define FHARDDOOM_COLCMD_TYPE_COL_SRC_PTR		0x2
+#define FHARDDOOM_COLCMD_TYPE_COL_SRC_VA		0x2
 /* Per-column source pitch.  */
 #define FHARDDOOM_COLCMD_TYPE_COL_SRC_PITCH		0x3
 /* Per-column U coord.  */
@@ -1145,7 +1148,6 @@
 #define FHARDDOOM_COLCMD_TYPE_DRAW			0x8
 /* Waits for a signal from SWR on the COLSEM interface, then flushes cache.  */
 #define FHARDDOOM_COLCMD_TYPE_COLSEM			0x9
-#define FHARDDOOM_COLCMD_DATA_COL_PTR(ptr, slot)	((ptr) | (slot) << 24)
 #define FHARDDOOM_COLCMD_DATA_COL_SETUP(x, col_en, cmap_b_en, height)	((x) | (col_en) << 8 | (cmap_b_en) << 9 | (height) << 16)
 /* The column X coord in the block.  */
 #define FHARDDOOM_COLCMD_DATA_EXTR_COL_SETUP_X(cmd)	((cmd) & 0x3f)
@@ -1208,7 +1210,7 @@
 
 #define FHARDDOOM_SWRCMD_TYPE_NOP			0x0
 /* The virtual base address of the TRANSMAP.  */
-#define FHARDDOOM_SWRCMD_TYPE_TRANSMAP_PTR		0x1
+#define FHARDDOOM_SWRCMD_TYPE_TRANSMAP_VA		0x1
 /* The virtual base address of the destination.  */
 #define FHARDDOOM_SWRCMD_TYPE_DST_SLOT			0x2
 /* The virtual base address of the destination.  */
