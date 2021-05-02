@@ -1,4 +1,4 @@
-static const uint32_t udoomfw[] = {
+static const uint32_t fdoomfw[] = {
 	0xc0010137,
 	0x80002537,
 	0xd6850513,

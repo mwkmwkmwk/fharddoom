@@ -6,5 +6,5 @@ fdoomfw.elf: fdoomfw.c fdoomfw.lds fharddoom.h
 fdoomfw.bin: fdoomfw.elf
 	riscv64-linux-gnu-objcopy fdoomfw.elf -O binary fdoomfw.bin
 
-fdoomfw.h: fdoomfw.bin
+fdoomfw.h: fdoomfw.bin mkhdr.py
 	python mkhdr.py fdoomfw.bin fdoomfw.h

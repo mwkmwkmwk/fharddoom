@@ -16,7 +16,7 @@ if __name__ == '__main__':
         d += b'\x00'
 
     with open(args.output, 'w') as f:
-        f.write('static const uint32_t udoomfw[] = {\n')
+        f.write('static const uint32_t fdoomfw[] = {\n')
         for i in range(0, len(d), 4):
             x = d[i:i+4]
             x = int.from_bytes(x, 'little')
