@@ -12,6 +12,7 @@
 /* Creates a new buffer on the device, returns its fd.  */
 struct fdoomdev_ioctl_create_buffer {
 	uint32_t size;
+	uint32_t pitch;
 };
 #define FDOOMDEV_IOCTL_CREATE_BUFFER _IOW('D', 0x00, struct fdoomdev_ioctl_create_buffer)
 
