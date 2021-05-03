@@ -402,7 +402,7 @@
 #define FHARDDOOM_MMU_CLIENT_SWR_TRANSMAP		7
 #define FHARDDOOM_MMU_CLIENT_NUM			8
 /* The master PT pointers, aka the slots.  */
-#define FHARDDOOM_MMU_SLOT(i)				(0x400 + (i) * 8)
+#define FHARDDOOM_MMU_SLOT(i)				(0x400 + (i) * 4)
 #define FHARDDOOM_MMU_SLOT_VALID			0x00000001
 #define FHARDDOOM_MMU_SLOT_PA_MASK			0xfffffff0
 #define FHARDDOOM_MMU_SLOT_PA_SHIFT			8
