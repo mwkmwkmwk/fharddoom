@@ -9,7 +9,7 @@
 
 #include <linux/ioctl.h>
 
-#define FDOOM_MAX_USER_SLOTS	60
+#define FDOOMDEV_MAX_USER_SLOTS		60
 
 /* Creates a new buffer on the device, returns its fd.  */
 struct fdoomdev_ioctl_create_buffer {
@@ -29,7 +29,7 @@ struct fdoomdev_ioctl_run {
 	uint32_t cmd_addr;
 	uint32_t cmd_size;
 	uint32_t buffers_num;
-	uint32_t buffer_fd[FDOOM_MAX_USER_SLOTS];
+	uint32_t buffer_fd[FDOOMDEV_MAX_USER_SLOTS];
 };
 #define FDOOMDEV_IOCTL_RUN _IOW('D', 0x02, struct fdoomdev_ioctl_run)
 

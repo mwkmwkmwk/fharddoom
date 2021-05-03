@@ -979,7 +979,7 @@
 #define FHARDDOOM_USER_DRAW_SPANS_W2(y0, y1)		((y0) | (y1) << 16)
 #define FHARDDOOM_USER_DRAW_SPANS_W2_EXTR_Y0(w)		((w) & 0xffff)
 #define FHARDDOOM_USER_DRAW_SPANS_W2_EXTR_Y1(w)		((w) >> 16 & 0xffff)
-/* The following 4 or 5 words are repeated once for every x coordinate.  */
+/* The following 5 or 6 words are repeated once for every x coordinate.  */
 /* Repeat word 0: x0 and x1.  */
 #define FHARDDOOM_USER_DRAW_SPANS_WR0(x0, x1)		((x0) | (x1) << 16)
 #define FHARDDOOM_USER_DRAW_SPANS_WR0_EXTR_X0(w)	((w) & 0xffff)
