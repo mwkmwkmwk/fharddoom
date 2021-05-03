@@ -994,9 +994,14 @@ void cmd_bind_slot(uint32_t cmd_header) {
 	uint32_t data = *CMD_FETCH_ARG;
 	slot_data[slot] = data;
 	MMU_BIND[slot] = data;
+	if (data & FHARDDOOM_USER_BIND_SLOT_DATA_USER)
+		STAT_BUMP[FHARDDOOM_STAT_FW_BIND_SLOT_USER] = 1;
+	else
+		STAT_BUMP[FHARDDOOM_STAT_FW_BIND_SLOT_KERNEL] = 1;
 }
 
 void cmd_clear_slots(uint32_t cmd_header) {
+	STAT_BUMP[FHARDDOOM_STAT_FW_CLEAR_SLOTS] = 1;
 	uint32_t mask_a = *CMD_FETCH_ARG;
 	uint32_t mask_b = *CMD_FETCH_ARG;
 	for (uint32_t i = 0; i < 32; i++)
@@ -1012,6 +1017,7 @@ void cmd_clear_slots(uint32_t cmd_header) {
 }
 
 void cmd_call(uint32_t cmd_header) {
+	STAT_BUMP[FHARDDOOM_STAT_FW_CALL] = 1;
 	uint32_t w1 = *CMD_FETCH_ARG;
 	*CMD_CALL_SLOT = validate_slot_kernel(FHARDDOOM_USER_CALL_HEADER_EXTR_SLOT(cmd_header));
 	*CMD_CALL_ADDR = FHARDDOOM_USER_CALL_HEADER_EXTR_ADDR(cmd_header);
@@ -1019,6 +1025,7 @@ void cmd_call(uint32_t cmd_header) {
 }
 
 void cmd_fence(uint32_t cmd_header) {
+	STAT_BUMP[FHARDDOOM_STAT_FW_FENCE] = 1;
 	srdsem();
 	fesem();
 	*CMD_FLUSH_CACHES = 0xf;

@@ -429,10 +429,10 @@
 #define FHARDDOOM_STATS(i)				(0x0800 + (i) * 4)
 #define FHARDDOOM_STATS_NUM				0x80
 /* Stats 0:0x20 are for the fw.  */
-/* A job has been processed.  */
-#define FHARDDOOM_STAT_FW_JOB				0x00
 /* A user command has been processed.  */
-#define FHARDDOOM_STAT_FW_CMD				0x01
+#define FHARDDOOM_STAT_FW_CMD				0x00
+/* A fence has been processed.  */
+#define FHARDDOOM_STAT_FW_FENCE				0x01
 /* A fill rect command has been processed.  */
 #define FHARDDOOM_STAT_FW_FILL_RECT			0x02
 /* A fill rect span has been drawn.  */
@@ -485,26 +485,36 @@
 #define FHARDDOOM_STAT_FW_DRAW_FUZZ_BATCH		0x1a
 /* A draw fuzz segment has been drawn.  */
 #define FHARDDOOM_STAT_FW_DRAW_FUZZ_SEG			0x1b
-/* 0x1c-0x1f unused and reserved for fw.  */
+/* A bind command without user flag set has been processed.  */
+#define FHARDDOOM_STAT_FW_BIND_SLOT_KERNEL		0x1c
+/* A bind command with user flag set has been processed.  */
+#define FHARDDOOM_STAT_FW_BIND_SLOT_USER		0x1d
+/* A clear slots command has been processed.  */
+#define FHARDDOOM_STAT_FW_CLEAR_SLOTS			0x1e
+/* A call command has been processed.  */
+#define FHARDDOOM_STAT_FW_CALL				0x1f
 /* A TLB direct hit (per-client).  */
-#define FHARDDOOM_STAT_TLB_HIT(i)			(0x20 + (i))
+#define FHARDDOOM_STAT_MMU_TLB_HIT(i)			(0x20 + (i))
 /* A TLB pool hit (per-client).  */
-#define FHARDDOOM_STAT_TLB_POOL_HIT(i)			(0x28 + (i))
+#define FHARDDOOM_STAT_MMU_TLB_POOL_HIT(i)		(0x28 + (i))
 /* A TLB miss — PTE fetch (per-client).  */
-#define FHARDDOOM_STAT_TLB_MISS(i)			(0x30 + (i))
-/* A kernel PDE TLB hit.  */
-#define FHARDDOOM_STAT_TLB_KERNEL_PDE_HIT		0x38
-/* A kernel PDE TLB miss — PDE fetch.  */
-#define FHARDDOOM_STAT_TLB_KERNEL_PDE_MISS		0x39
-/* A user PDE TLB hit.  */
-#define FHARDDOOM_STAT_TLB_USER_PDE_HIT			0x3a
-/* A user PDE TLB miss — PDE fetch.  */
-#define FHARDDOOM_STAT_TLB_USER_PDE_MISS		0x3b
-/* A kernel TLB flush.  */
-#define FHARDDOOM_STAT_TLB_KERNEL_FLUSH			0x3c
-/* A user TLB flush.  */
-#define FHARDDOOM_STAT_TLB_USER_FLUSH			0x3d
-/* 0x3e-0x3f unused.  */
+#define FHARDDOOM_STAT_MMU_TLB_MISS(i)			(0x30 + (i))
+/* CMD_MAIN block read.  */
+#define FHARDDOOM_STAT_CMD_MAIN_BLOCK			0x38
+/* CMD_MAIN word read.  */
+#define FHARDDOOM_STAT_CMD_MAIN_WORD			0x39
+/* CMD_SUB block read.  */
+#define FHARDDOOM_STAT_CMD_SUB_BLOCK			0x3a
+/* CMD_SUB word read.  */
+#define FHARDDOOM_STAT_CMD_SUB_WORD			0x3b
+/* CMD_MANUAL_FEED word poke.  */
+#define FHARDDOOM_STAT_CMD_MANUAL_WORD			0x3c
+/* FENCE_WAIT interrupt triggered.  */
+#define FHARDDOOM_STAT_CMD_FENCE_WAIT			0x3d
+/* Command header read from main command buffer.  */
+#define FHARDDOOM_STAT_CMD_HEADER_MAIN			0x3e
+/* Command header read from subroutine command buffer.  */
+#define FHARDDOOM_STAT_CMD_HEADER_SUB			0x3f
 /* A cache hit (per-client).  */
 #define FHARDDOOM_STAT_CACHE_HIT(i)			(0x40 + (i))
 /* A cache miss (per-client).  */
@@ -515,13 +525,7 @@
 #define FHARDDOOM_STAT_CACHE_SPEC_MISS(i)		(0x4c + (i))
 /* A cache flush (per-client).  */
 #define FHARDDOOM_STAT_CACHE_FLUSH(i)			(0x50 + (i))
-/* FENCE_WAIT interrupt triggered.  */
-#define FHARDDOOM_STAT_FENCE_WAIT			0x54
-/* 0x55 unused.  */
-/* CMD block read.  */
-#define FHARDDOOM_STAT_CMD_BLOCK			0x56
-/* CMD word read.  */
-#define FHARDDOOM_STAT_CMD_WORD				0x57
+/* 0x54-0x57 unused.  */
 /* FE instruction executed.  */
 #define FHARDDOOM_STAT_FE_INSN				0x58
 /* FE load executed.  */
